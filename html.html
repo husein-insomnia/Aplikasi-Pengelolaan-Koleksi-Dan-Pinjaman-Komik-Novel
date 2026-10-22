@@ -1,0 +1,350 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KoNoku - Koleksi Pribadi</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+    <header class="navbar">
+        <a href="#" class="brand">
+            <span class="brand-icon">K</span>
+            <span>
+                <strong>KoNoku</strong>
+                <small>KOLEKSI PRIBADI</small>
+            </span>
+        </a>
+
+        <div class="navbar-right">
+            <input type="search" id="globalSearch"
+                   placeholder="Cari judul, penulis, genre...">
+
+            <button class="profile-button" id="profileButton">
+                <span class="avatar" id="avatarInitial">A</span>
+                <span>
+                    <strong id="profileName">Administrator</strong>
+                    <small>Pengelola</small>
+                </span>
+            </button>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <p class="menu-title">MENU UTAMA</p>
+
+            <nav>
+                <a href="#dashboard" class="nav-link"> Dashboard</a>
+                <a href="#koleksi" class="nav-link active"> Data Koleksi</a>
+                <a href="#genre" class="nav-link"> Genre / Kategori</a>
+                <a href="#peminjam" class="nav-link">Teman / Peminjam</a>
+                <a href="#peminjaman" class="nav-link">Peminjaman</a>
+                <a href="#laporan" class="nav-link">Laporan</a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <strong>Koleksi tertata,</strong>
+                <p>cerita selalu terjaga.</p>
+                <small>PBL · Mahasiswa 1</small>
+            </div>
+        </aside>
+
+        <main class="main-content">
+
+            <section class="page-heading" id="dashboard">
+                <div>
+                    <p class="eyebrow">MODUL GENRE & KOLEKSI</p>
+                    <h1>Data Koleksi</h1>
+                    <p class="subtitle">
+                        Kelola genre, komik, dan novel dalam satu tempat.
+                    </p>
+                </div>
+
+                <button class="btn btn-primary" id="addCollectionBtn">
+                    + Tambah Koleksi
+                </button>
+            </section>
+
+            <!-- Ringkasan otomatis dari JavaScript -->
+            <section class="stats-grid">
+                <article class="stat-card">
+                    <p>Total Koleksi</p>
+                    <h2 id="totalCollections">0</h2>
+                    <small>Komik dan novel tersimpan</small>
+                </article>
+
+                <article class="stat-card">
+                    <p>Total Genre</p>
+                    <h2 id="totalGenres">0</h2>
+                    <small>Kategori koleksi</small>
+                </article>
+
+                <article class="stat-card">
+                    <p>Koleksi Tersedia</p>
+                    <h2 id="availableCollections">0</h2>
+                    <small>Siap dipinjam</small>
+                </article>
+
+                <article class="stat-card">
+                    <p>Genre Terpopuler</p>
+                    <h2 id="popularGenre">—</h2>
+                    <small id="popularGenreFoot">Belum ada data koleksi</small>
+                </article>
+            </section>
+
+            <!-- Pengelolaan genre -->
+            <section class="panel" id="genre">
+                <div class="section-heading">
+                    <div>
+                        <h2>Genre / Kategori</h2>
+                        <p>Atur kategori komik dan novel.</p>
+                    </div>
+
+                    <button class="btn btn-secondary" id="addGenreBtn">
+                        + Tambah Genre
+                    </button>
+                </div>
+
+                <div class="genre-list" id="genreList"></div>
+            </section>
+
+            <!-- Tabel koleksi -->
+            <section class="panel collection-panel" id="koleksi">
+                <div class="section-heading collection-heading">
+                    <div>
+                        <h2>Daftar Koleksi</h2>
+                        <p>Kelola informasi komik dan novel.</p>
+                    </div>
+
+                    <div class="filters">
+                        <input type="search" id="collectionSearch"
+                               placeholder="Cari koleksi...">
+
+                        <select id="genreFilter">
+                            <option value="">Semua genre</option>
+                        </select>
+
+                        <select id="typeFilter">
+                            <option value="">Semua jenis</option>
+                            <option value="Komik">Komik</option>
+                            <option value="Novel">Novel</option>
+                        </select>
+
+                        <select id="statusFilter">
+                            <option value="">Semua status</option>
+                            <option value="Tersedia">Tersedia</option>
+                            <option value="Dipinjam">Dipinjam</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>JUDUL KOLEKSI</th>
+                                <th>JENIS</th>
+                                <th>GENRE</th>
+                                <th>PENULIS</th>
+                                <th>TAHUN</th>
+                                <th>STATUS</th>
+                                <th>AKSI</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="collectionTableBody"></tbody>
+                    </table>
+
+                    <div class="empty-state" id="emptyState" hidden>
+                        <div class="empty-icon">▤</div>
+                        <h3>Belum ada koleksi</h3>
+                        <p>Tambahkan koleksi pertama untuk memulai.</p>
+                        <button class="btn btn-primary" id="emptyAddBtn">
+                            + Tambah Koleksi
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-footer">
+                    <span id="tableCount">Menampilkan 0 koleksi</span>
+                    <span>Data tersimpan di browser</span>
+                </div>
+            </section>
+
+            <!-- Rekapitulasi otomatis -->
+            <section class="bottom-grid">
+                <article class="panel">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Rekap Koleksi per Genre</h2>
+                            <p>Jumlah koleksi dalam setiap kategori.</p>
+                        </div>
+                    </div>
+
+                    <div id="genreRecap" class="recap-list"></div>
+                </article>
+
+                <article class="panel">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Catatan Modul</h2>
+                            <p>Ruang lingkup Mahasiswa 1.</p>
+                        </div>
+                    </div>
+
+                    <ul class="check-list">
+                        <li>✓ Tambah, ubah, dan hapus genre.</li>
+                        <li>✓ Tambah, ubah, dan hapus koleksi.</li>
+                        <li>✓ Pencarian dan filter koleksi.</li>
+                        <li>✓ Rekapitulasi otomatis.</li>
+                    </ul>
+                </article>
+            </section>
+
+            <footer class="footer">
+                <span>© 2026 KoNoku</span>
+                <span>PBL · Modul Genre & Koleksi</span>
+            </footer>
+
+        </main>
+    </div>
+</div>
+
+<!-- Form genre -->
+<div class="modal-backdrop" id="genreModal" hidden>
+    <section class="modal">
+        <div class="modal-heading">
+            <h2 id="genreModalTitle">Tambah Genre</h2>
+            <button type="button" class="close-btn"
+                    data-close="genreModal">×</button>
+        </div>
+
+        <form id="genreForm">
+            <input type="hidden" id="genreId">
+
+            <label for="genreName">Nama genre *</label>
+            <input id="genreName" maxlength="40"
+                   placeholder="Contoh: Fantasi" required>
+
+            <label for="genreDescription">Deskripsi (opsional)</label>
+            <textarea id="genreDescription" rows="3"
+                      maxlength="140"
+                      placeholder="Deskripsi genre"></textarea>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                        data-close="genreModal">Batal</button>
+                <button type="submit" class="btn btn-primary">
+                    Simpan Genre
+                </button>
+            </div>
+        </form>
+    </section>
+</div>
+
+<!-- Form koleksi -->
+<div class="modal-backdrop" id="collectionModal" hidden>
+    <section class="modal modal-wide">
+        <div class="modal-heading">
+            <h2 id="collectionModalTitle">Tambah Koleksi</h2>
+            <button type="button" class="close-btn"
+                    data-close="collectionModal">×</button>
+        </div>
+
+        <form id="collectionForm">
+            <input type="hidden" id="collectionId">
+
+            <label for="collectionTitle">Judul koleksi *</label>
+            <input id="collectionTitle" maxlength="100"
+                   placeholder="Judul komik atau novel" required>
+
+            <div class="form-grid">
+                <div>
+                    <label for="collectionType">Jenis *</label>
+                    <select id="collectionType" required>
+                        <option value="Komik">Komik</option>
+                        <option value="Novel">Novel</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="collectionGenre">Genre *</label>
+                    <select id="collectionGenre" required></select>
+                </div>
+
+                <div>
+                    <label for="collectionAuthor">Penulis *</label>
+                    <input id="collectionAuthor" maxlength="80"
+                           placeholder="Nama penulis" required>
+                </div>
+
+                <div>
+                    <label for="collectionYear">Tahun terbit</label>
+                    <input id="collectionYear" type="number"
+                           min="1000" max="2100" placeholder="2024">
+                </div>
+
+                <div>
+                    <label for="collectionVolume">Volume / edisi</label>
+                    <input id="collectionVolume" maxlength="30"
+                           placeholder="Vol. 1">
+                </div>
+
+                <div>
+                    <label for="collectionStatus">Status *</label>
+                    <select id="collectionStatus" required>
+                        <option value="Tersedia">Tersedia</option>
+                        <option value="Dipinjam">Dipinjam</option>
+                    </select>
+                </div>
+            </div>
+
+            <label for="collectionNotes">Catatan (opsional)</label>
+            <textarea id="collectionNotes" rows="2" maxlength="250"
+                      placeholder="Informasi tambahan"></textarea>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                        data-close="collectionModal">Batal</button>
+                <button type="submit" class="btn btn-primary">
+                    Simpan Koleksi
+                </button>
+            </div>
+        </form>
+    </section>
+</div>
+
+<!-- Pengaturan profil -->
+<div class="modal-backdrop" id="profileModal" hidden>
+    <section class="modal">
+        <div class="modal-heading">
+            <h2>Profil Pengguna</h2>
+            <button type="button" class="close-btn"
+                    data-close="profileModal">×</button>
+        </div>
+
+        <form id="profileForm">
+            <label for="profileNameInput">Nama pengguna *</label>
+            <input id="profileNameInput" maxlength="40"
+                   placeholder="Masukkan nama" required>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                        data-close="profileModal">Batal</button>
+                <button type="submit" class="btn btn-primary">
+                    Simpan Profil
+                </button>
+            </div>
+        </form>
+    </section>
+</div>
+
+<div id="toast" class="toast" role="status"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
