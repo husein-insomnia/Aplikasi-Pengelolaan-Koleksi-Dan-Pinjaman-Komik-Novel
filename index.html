@@ -1,35 +1,416 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>koNoku</title>
+    <title>KoNoku - Koleksi Pribadi</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-    < class="navbar">
-        <h2><b>Konoku</b></h2>
-        <form class="from" method="get" action="#">
-            <input id="pencarian" type="search" name="pencarian" placeholder="pencariam" required>  
+
+    <!-- HALAMAN LOGIN -->
+    <section id="loginPage" class="auth-page">
+        <form id="loginForm" class="auth-card">
+            <div class="logo">K</div>
+            <h1>KoNoku</h1>
+            <p class="subtitle">Masuk ke koleksi komik dan novel pribadi</p>
+
+            <label for="loginEmail">Email</label>
+            <input id="loginEmail" type="email" required
+                   placeholder="Masukkan email">
+
+            <label for="loginPassword">Password</label>
+            <input id="loginPassword" type="password" required
+                   placeholder="Masukkan password">
+
+            <button type="submit" class="primary-btn">Login</button>
+
+            <p class="switch-auth">
+                Belum punya akun?
+                <a href="#" id="showRegister">Registrasi</a>
+            </p>
+            <p id="loginMessage" class="message"></p>
         </form>
-        <div class="profil" id="profil">
-            <img src="#" alt="">
-            <div class="tulisan bawah">
-                <p>nama pengguna</p>
-                <span>administrator</span>
+    </section>
+
+    <!-- HALAMAN REGISTRASI -->
+    <section id="registerPage" class="auth-page hidden">
+        <form id="registerForm" class="auth-card">
+            <div class="logo">K</div>
+            <h1>Buat Akun</h1>
+            <p class="subtitle">Daftar untuk mulai mengelola koleksi</p>
+
+            <label for="registerName">Nama lengkap</label>
+            <input id="registerName" type="text" required
+                   placeholder="Masukkan nama">
+
+            <label for="registerEmail">Email</label>
+            <input id="registerEmail" type="email" required
+                   placeholder="Masukkan email">
+
+            <label for="registerPassword">Password</label>
+            <input id="registerPassword" type="password" minlength="6"
+                   required placeholder="Minimal 6 karakter">
+
+            <button type="submit" class="primary-btn">
+                Registrasi
+            </button>
+
+            <p class="switch-auth">
+                Sudah punya akun?
+                <a href="#" id="showLogin">Login</a>
+            </p>
+            <p id="registerMessage" class="message"></p>
+        </form>
+    </section>
+
+    <!-- APLIKASI UTAMA SETELAH LOGIN -->
+    <div id="appPage" class="app hidden">
+
+        <header class="navbar">
+            <a href="#" class="brand" data-page="dashboard">
+                <span class="brand-icon">K</span>
+                <span>
+                    <strong>KoNoku</strong>
+                    <small>KOLEKSI PRIBADI</small>
+                </span>
+            </a>
+
+            <div class="navbar-right">
+                <input type="search" id="globalSearch"
+                       placeholder="Cari judul, penulis, genre...">
+
+                <button id="profileButton" class="profile-button">
+                    <span id="avatarInitial" class="avatar">U</span>
+                    <span>
+                        <strong id="profileName">Pengguna</strong>
+                        <small>Admin</small>
+                    </span>
+                </button>
+
+                <button id="logoutButton" class="logout-btn">
+                    Keluar
+                </button>
             </div>
-        </div>
-     </header>
+        </header>
 
-     
-        <div>
-            <ul>
-                <li><a href="data-kolk">Data Koleksi</a></li>
-                <li><a href="pmm">Peminjam</a></li>
-                <li><a href="pmnm">Peminjaman</a></li>
-                <li><a href="lpr">laporan</a></li>
-            </ul>
-        </div>
+        <div class="layout">
+            <aside class="sidebar">
+                <p class="menu-label">MENU UTAMA</p>
 
+                <button class="nav-link active" data-page="dashboard">
+                    Dashboard
+                </button>
+                <button class="nav-link" data-page="koleksi">
+                    Data Koleksi
+                </button>
+                <button class="nav-link" data-page="teman">
+                    Teman/Peminjam
+                </button>
+                <button class="nav-link" data-page="peminjaman">
+                    Peminjaman
+                </button>
+                <button class="nav-link" data-page="laporan">
+                    Laporan
+                </button>
+                <button class="nav-link" data-page="profil">
+                    Profil Saya
+                </button>
+            </aside>
+
+            <main class="content">
+
+                <!-- DASHBOARD -->
+                <section id="page-dashboard" class="page">
+                    <h1>Dashboard</h1>
+                    <p class="subtitle">
+                        Ringkasan jumlah koleksi dan status peminjaman.
+                    </p>
+
+                    <div class="stats-grid">
+                        <article class="stat-card">
+                            <span>Total Koleksi</span>
+                            <h2 id="totalKoleksi">0 item</h2>
+                        </article>
+                        <article class="stat-card">
+                            <span>Sedang Dipinjam</span>
+                            <h2 id="totalDipinjam">0 item</h2>
+                        </article>
+                        <article class="stat-card">
+                            <span>Terlambat</span>
+                            <h2 id="totalTerlambat">0 transaksi</h2>
+                        </article>
+                        <article class="stat-card">
+                            <span>Teman Terdaftar</span>
+                            <h2 id="totalTeman">0 orang</h2>
+                        </article>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <section class="panel">
+                            <h3>Aktivitas Peminjaman Terbaru</h3>
+                            <div class="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Peminjam</th>
+                                            <th>Judul</th>
+                                            <th>Tanggal</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentLoans">
+                                        <tr>
+                                            <td colspan="4" class="empty">
+                                                Belum ada transaksi peminjaman.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section class="panel attention">
+                            <h3>Perlu Perhatian</h3>
+                            <div id="attentionList">
+                                <p>Belum ada transaksi yang perlu diperhatikan.</p>
+                            </div>
+                        </section>
+                    </div>
+
+                    <section class="panel quick-actions">
+                        <h3>Akses Cepat</h3>
+                        <button class="primary-btn" data-page="koleksi">
+                            + Tambah Koleksi
+                        </button>
+                        <button class="secondary-btn" data-page="peminjaman">
+                            + Catat Peminjaman
+                        </button>
+                        <button class="secondary-btn" data-page="laporan">
+                            Lihat Laporan
+                        </button>
+                    </section>
+                </section>
+
+                <!-- MAHASISWA 1: GENRE DAN KOLEKSI -->
+                <section id="page-koleksi" class="page hidden">
+                    <h1>Data Koleksi</h1>
+                    <p class="subtitle">
+                    
+                    </p>
+
+                    <section class="panel">
+                        <h3>Tambah Koleksi</h3>
+
+                        <form id="collectionForm" class="data-form">
+                            <label for="bookTitle">Judul komik/novel</label>
+                            <input id="bookTitle" required
+                                   placeholder="Contoh: One Piece Vol. 1">
+
+                            <label for="bookAuthor">Penulis</label>
+                            <input id="bookAuthor" required
+                                   placeholder="Nama penulis">
+
+                            <label for="bookGenre">Genre</label>
+                            <input id="bookGenre" required
+                                   placeholder="Contoh: Petualangan">
+
+                            <label for="bookType">Jenis koleksi</label>
+                            <select id="bookType">
+                                <option value="Komik">Komik</option>
+                                <option value="Novel">Novel</option>
+                            </select>
+
+                            <label for="bookYear">Tahun terbit</label>
+                            <input id="bookYear" type="number" min="1"
+                                   placeholder="Contoh: 2024">
+
+                            <label for="bookCondition">Kondisi</label>
+                            <select id="bookCondition">
+                                <option value="Baik">Baik</option>
+                                <option value="Rusak Ringan">Rusak Ringan</option>
+                                <option value="Rusak">Rusak</option>
+                            </select>
+
+                            <label for="bookStock">Jumlah eksemplar</label>
+                            <input id="bookStock" type="number" min="1"
+                                   value="1" required>
+
+                            <button type="submit" class="primary-btn">
+                                Simpan Koleksi
+                            </button>
+                        </form>
+                    </section>
+
+                    <section class="panel">
+                        <h3>Daftar Koleksi</h3>
+                        <div class="filter-row">
+                            <input id="genreFilter" placeholder="Filter genre...">
+                            <select id="typeFilter">
+                                <option value="">Semua jenis</option>
+                                <option value="Komik">Komik</option>
+                                <option value="Novel">Novel</option>
+                            </select>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Judul</th>
+                                        <th>Penulis</th>
+                                        <th>Genre</th>
+                                        <th>Jenis</th>
+                                        <th>Stok</th>
+                                        <th>Kondisi</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="collectionTable"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- MAHASISWA 2: TEMAN/PEMINJAM -->
+                <section id="page-teman" class="page hidden">
+                    <h1>Teman/Peminjam</h1>
+                    <p class="subtitle">
+                        
+                    </p>
+
+                    <section class="panel">
+                        <h3>Tambah Teman</h3>
+                        <form id="friendForm" class="data-form">
+                            <label for="friendName">Nama teman</label>
+                            <input id="friendName" required
+                                   placeholder="Nama lengkap">
+
+                            <label for="friendPhone">Nomor telepon</label>
+                            <input id="friendPhone" type="tel"
+                                   placeholder="Nomor telepon">
+
+                            <button type="submit" class="primary-btn">
+                                Simpan Teman
+                            </button>
+                        </form>
+                    </section>
+
+                    <section class="panel">
+                        <h3>Daftar Teman</h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nama</th>
+                                        <th>Nomor Telepon</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="friendTable"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- MAHASISWA 2: TRANSAKSI -->
+                <section id="page-peminjaman" class="page hidden">
+                    <h1>Peminjaman</h1>
+                    <p class="subtitle">
+                        
+                    </p>
+
+                    <section class="panel">
+                        <h3>Catat Peminjaman</h3>
+                        <form id="loanForm" class="data-form">
+                            <label for="loanFriend">Peminjam</label>
+                            <select id="loanFriend" required></select>
+
+                            <label for="loanBook">Koleksi</label>
+                            <select id="loanBook" required></select>
+
+                            <label for="loanDate">Tanggal pinjam</label>
+                            <input id="loanDate" type="date" required>
+
+                            <label for="loanDue">Batas pengembalian</label>
+                            <input id="loanDue" type="date" required>
+
+                            <button type="submit" class="primary-btn">
+                                Simpan Peminjaman
+                            </button>
+                        </form>
+                    </section>
+
+                    <section class="panel">
+                        <h3>Riwayat Transaksi</h3>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Peminjam</th>
+                                        <th>Koleksi</th>
+                                        <th>Tanggal Pinjam</th>
+                                        <th>Batas Kembali</th>
+                                        <th>Status</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="loanTable"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- LAPORAN -->
+                <section id="page-laporan" class="page hidden">
+                    <h1>Laporan</h1>
+                    <p class="subtitle">
+                        Rekap koleksi dan transaksi peminjaman.
+                    </p>
+                    <section class="stats-grid">
+                        <article class="stat-card">
+                            <span>Total Judul</span>
+                            <h2 id="reportBooks">0</h2>
+                        </article>
+                        <article class="stat-card">
+                            <span>Total Teman</span>
+                            <h2 id="reportFriends">0</h2>
+                        </article>
+                        <article class="stat-card">
+                            <span>Total Transaksi</span>
+                            <h2 id="reportLoans">0</h2>
+                        </article>
+                    </section>
+                    <button id="exportButton" class="primary-btn">
+                        Unduh Laporan CSV
+                    </button>
+                </section>
+
+                <!-- PROFIL -->
+                <section id="page-profil" class="page hidden">
+                    <h1>Profil Saya</h1>
+                    <p class="subtitle">Informasi akun pengguna.</p>
+                    <section class="panel profile-panel">
+                        <div id="largeAvatar" class="large-avatar">U</div>
+                        <h2 id="profilePageName">Pengguna</h2>
+                        <p id="profilePageEmail"></p>
+
+                        <form id="profileForm" class="data-form">
+                            <label for="editName">Nama pengguna</label>
+                            <input id="editName" required>
+
+                            <button type="submit" class="primary-btn">
+                                Simpan Profil
+                            </button>
+                        </form>
+                    </section>
+                </section>
+
+                <p id="appMessage" class="message"></p>
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>

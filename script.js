@@ -1,49 +1,41 @@
 
-/* ==========================================
-   KoNoku - Mahasiswa 1
-   Modul Genre dan Data Koleksi
-   Penyimpanan menggunakan localStorage
-========================================== */
+// =============================================
+// KONOKU - JAVASCRIPT
+// Login, registrasi, koleksi, peminjam, transaksi
+// =============================================
 
-const STORAGE = {
-    genres: "konoku_genres_v1",
-    collections: "konoku_collections_v1",
-    profile: "konoku_profile_v1"
-};
+const $ = (id) => document.getElementById(id);
 
-const $ = id => document.getElementById(id);
-
-const colors = [
-    "#4263eb",
-    "#7c55d9",
-    "#159a75",
-    "#d28a22",
-    "#db5c75",
-    "#2798ad"
-];
-
-function readData(key, fallback) {
+const readData = (key, fallback = []) => {
     try {
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : fallback;
-    } catch (error) {
+        return JSON.parse(localStorage.getItem(key)) ?? fallback;
+    } catch {
         return fallback;
     }
+};
+
+const saveData = (key, value) => {
+    localStorage.setItem(key, JSON.stringify(value));
+};
+
+let users = readData("konoku_users");
+let collections = readData("konoku_collections");
+let friends = readData("konoku_friends");
+let loans = readData("konoku_loans");
+let currentUser = readData("konoku_current_user", null);
+
+// =============================================
+// FUNGSI UMUM
+// =============================================
+
+function showMessage(id, message, isError = false) {
+    const element = $(id);
+    element.textContent = message;
+    element.classList.toggle("error", isError);
 }
 
-function saveData() {
-    localStorage.setItem(STORAGE.genres, JSON.stringify(genres));
-    localStorage.setItem(STORAGE.collections, JSON.stringify(collections));
-}
-
-function createId() {
-    return crypto.randomUUID
-        ? crypto.randomUUID()
-        : Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
-function escapeHTML(value = "") {
-    return String(value).replace(/[&<>"']/g, char => ({
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
@@ -52,679 +44,654 @@ function escapeHTML(value = "") {
     })[char]);
 }
 
-let genres = readData(STORAGE.genres, [
-    {
-        id: createId(),
-        name: "Fantasi",
-        description: "Dunia imajinatif dan petualangan"
-    },
-    {
-        id: createId(),
-        name: "Aksi",
-        description: "Cerita penuh aksi dan tantangan"
-    },
-    {
-        id: createId(),
-        name: "Romansa",
-        description: "Kisah hubungan dan perasaan"
-    },
-    {
-        id: createId(),
-        name: "Misteri",
-        description: "Teka-teki dan rahasia"
-    }
-]);
-
-let collections = readData(STORAGE.collections, []);
-let profileName = readData(STORAGE.profile, "Administrator");
-
-/* NOTIFIKASI */
-
-let toastTimer;
-
-function showToast(message) {
-    const toast = $("toast");
-
-    toast.textContent = message;
-    toast.classList.add("show");
-
-    clearTimeout(toastTimer);
-
-    toastTimer = setTimeout(() => {
-        toast.classList.remove("show");
-    }, 2600);
+function today() {
+    const date = new Date();
+    const offset = date.getTimezoneOffset();
+    return new Date(date.getTime() - offset * 60000)
+        .toISOString().slice(0, 10);
 }
 
-/* MODAL */
-
-function openModal(id) {
-    $(id).hidden = false;
-
-    const input = $(id).querySelector(
-        "input:not([type=hidden]), textarea, select"
-    );
-
-    if (input) input.focus();
+function getLoanStatus(loan) {
+    if (loan.returned) return "Kembali";
+    if (loan.dueDate < today()) return "Terlambat";
+    return "Dipinjam";
 }
 
-function closeModal(id) {
-    $(id).hidden = true;
+function showAuth(page) {
+    $("loginPage").classList.toggle("hidden", page !== "login");
+    $("registerPage").classList.toggle("hidden", page !== "register");
+    $("appPage").classList.add("hidden");
 }
 
-document.querySelectorAll("[data-close]").forEach(button => {
-    button.addEventListener("click", () => {
-        closeModal(button.dataset.close);
+function showApp() {
+    $("loginPage").classList.add("hidden");
+    $("registerPage").classList.add("hidden");
+    $("appPage").classList.remove("hidden");
+
+    updateProfile();
+    renderAll();
+    showPage("dashboard");
+}
+
+function updateProfile() {
+    if (!currentUser) return;
+
+    const name = currentUser.name || "Pengguna";
+    const initial = name.trim().charAt(0).toUpperCase() || "U";
+
+    $("profileName").textContent = name;
+    $("avatarInitial").textContent = initial;
+    $("largeAvatar").textContent = initial;
+    $("profilePageName").textContent = name;
+    $("profilePageEmail").textContent = currentUser.email;
+    $("editName").value = name;
+}
+
+// =============================================
+// NAVIGASI HALAMAN
+// =============================================
+
+function showPage(pageName) {
+    document.querySelectorAll(".page").forEach(page => {
+        page.classList.add("hidden");
     });
-});
 
-document.querySelectorAll(".modal-backdrop").forEach(modal => {
-    modal.addEventListener("click", event => {
-        if (event.target === modal) {
-            closeModal(modal.id);
-        }
+    const target = $("page-" + pageName);
+    if (target) target.classList.remove("hidden");
+
+    document.querySelectorAll(".nav-link").forEach(button => {
+        button.classList.toggle(
+            "active",
+            button.dataset.page === pageName
+        );
     });
-});
 
-document.addEventListener("keydown", event => {
-    if (event.key === "Escape") {
-        document.querySelectorAll(".modal-backdrop:not([hidden])")
-            .forEach(modal => closeModal(modal.id));
+    if (pageName === "peminjaman") {
+        renderLoanOptions();
     }
+}
 
-    if ((event.ctrlKey || event.metaKey) &&
-        event.key.toLowerCase() === "k") {
+document.querySelectorAll("[data-page]").forEach(button => {
+    button.addEventListener("click", event => {
         event.preventDefault();
-        $("globalSearch").focus();
-    }
+        showPage(button.dataset.page);
+    });
 });
 
-/* FUNGSI GENRE */
+// =============================================
+// LOGIN DAN REGISTRASI
+// Catatan: autentikasi ini hanya demonstrasi frontend.
+// =============================================
 
-function getGenreName(id) {
-    const genre = genres.find(item => item.id === id);
-    return genre ? genre.name : "Genre tidak ditemukan";
-}
-
-function countByGenre(id) {
-    return collections.filter(item => item.genreId === id).length;
-}
-
-function renderGenreOptions() {
-    const filter = $("genreFilter");
-    const oldFilter = filter.value;
-
-    filter.innerHTML =
-        '<option value="">Semua genre</option>' +
-        genres.map(genre => `
-            <option value="${escapeHTML(genre.id)}">
-                ${escapeHTML(genre.name)}
-            </option>
-        `).join("");
-
-    if (genres.some(item => item.id === oldFilter)) {
-        filter.value = oldFilter;
-    }
-
-    const select = $("collectionGenre");
-    const oldGenre = select.value;
-
-    select.innerHTML = genres.map(genre => `
-        <option value="${escapeHTML(genre.id)}">
-            ${escapeHTML(genre.name)}
-        </option>
-    `).join("");
-
-    if (genres.some(item => item.id === oldGenre)) {
-        select.value = oldGenre;
-    }
-}
-
-function renderGenres() {
-    const container = $("genreList");
-
-    if (genres.length === 0) {
-        container.innerHTML = `
-            <div class="empty-message">
-                Belum ada genre. Tambahkan genre terlebih dahulu.
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = genres.map((genre, index) => {
-        const count = countByGenre(genre.id);
-
-        return `
-            <article class="genre-chip"
-                style="--chip-color:${colors[index % colors.length]}">
-
-                <span class="genre-dot"></span>
-
-                <div class="genre-copy">
-                    <strong>${escapeHTML(genre.name)}</strong>
-                    <small>
-                        ${count} koleksi
-                        ${genre.description
-                            ? " · " + escapeHTML(genre.description)
-                            : ""}
-                    </small>
-                </div>
-
-                <div class="genre-actions">
-                    <button class="mini-btn"
-                        type="button"
-                        data-edit-genre="${escapeHTML(genre.id)}"
-                        title="Ubah genre">✎</button>
-
-                    <button class="mini-btn delete"
-                        type="button"
-                        data-delete-genre="${escapeHTML(genre.id)}"
-                        title="Hapus genre">×</button>
-                </div>
-            </article>
-        `;
-    }).join("");
-
-    container.querySelectorAll("[data-edit-genre]").forEach(button => {
-        button.addEventListener("click", () => {
-            editGenre(button.dataset.editGenre);
-        });
-    });
-
-    container.querySelectorAll("[data-delete-genre]").forEach(button => {
-        button.addEventListener("click", () => {
-            deleteGenre(button.dataset.deleteGenre);
-        });
-    });
-}
-
-/* TAMBAH DAN UBAH GENRE */
-
-function resetGenreForm() {
-    $("genreForm").reset();
-    $("genreId").value = "";
-    $("genreModalTitle").textContent = "Tambah Genre";
-}
-
-$("addGenreBtn").addEventListener("click", () => {
-    resetGenreForm();
-    openModal("genreModal");
+$("showRegister").addEventListener("click", event => {
+    event.preventDefault();
+    showAuth("register");
 });
 
-function editGenre(id) {
-    const genre = genres.find(item => item.id === id);
+$("showLogin").addEventListener("click", event => {
+    event.preventDefault();
+    showAuth("login");
+});
 
-    if (!genre) return;
-
-    $("genreId").value = genre.id;
-    $("genreName").value = genre.name;
-    $("genreDescription").value = genre.description || "";
-    $("genreModalTitle").textContent = "Ubah Genre";
-
-    openModal("genreModal");
-}
-
-$("genreForm").addEventListener("submit", event => {
+$("registerForm").addEventListener("submit", event => {
     event.preventDefault();
 
-    const id = $("genreId").value;
-    const name = $("genreName").value.trim();
-    const description = $("genreDescription").value.trim();
+    const name = $("registerName").value.trim();
+    const email = $("registerEmail").value.trim().toLowerCase();
+    const password = $("registerPassword").value;
 
-    if (!name) {
-        showToast("Nama genre wajib diisi.");
+    if (users.some(user => user.email === email)) {
+        showMessage("registerMessage", "Email sudah terdaftar.", true);
         return;
     }
 
-    const duplicate = genres.some(genre =>
-        genre.name.toLowerCase() === name.toLowerCase() &&
-        genre.id !== id
+    users.push({
+        id: Date.now(),
+        name,
+        email,
+        password
+    });
+
+    saveData("konoku_users", users);
+
+    showMessage(
+        "registerMessage",
+        "Registrasi berhasil. Silakan login."
     );
 
-    if (duplicate) {
-        showToast("Nama genre sudah digunakan.");
-        return;
-    }
+    $("registerForm").reset();
+    $("loginEmail").value = email;
 
-    if (id) {
-        const genre = genres.find(item => item.id === id);
-
-        if (genre) {
-            genre.name = name;
-            genre.description = description;
-        }
-
-        showToast("Genre berhasil diperbarui.");
-    } else {
-        genres.push({
-            id: createId(),
-            name,
-            description
-        });
-
-        showToast("Genre berhasil ditambahkan.");
-    }
-
-    saveData();
-    renderAll();
-    closeModal("genreModal");
-    resetGenreForm();
+    setTimeout(() => showAuth("login"), 800);
 });
 
-/* HAPUS GENRE */
+$("loginForm").addEventListener("submit", event => {
+    event.preventDefault();
 
-function deleteGenre(id) {
-    const genre = genres.find(item => item.id === id);
+    const email = $("loginEmail").value.trim().toLowerCase();
+    const password = $("loginPassword").value;
 
-    if (!genre) return;
+    const user = users.find(item =>
+        item.email === email && item.password === password
+    );
 
-    if (countByGenre(id) > 0) {
-        showToast(
-            "Genre masih digunakan. Ubah genre koleksi terlebih dahulu."
+    if (!user) {
+        showMessage(
+            "loginMessage",
+            "Email atau password salah. Silakan periksa kembali.",
+            true
         );
         return;
     }
 
-    if (!confirm(`Hapus genre "${genre.name}"?`)) return;
+    currentUser = {
+        id: user.id,
+        name: user.name,
+        email: user.email
+    };
 
-    genres = genres.filter(item => item.id !== id);
+    saveData("konoku_current_user", currentUser);
+    showApp();
+});
 
-    saveData();
-    renderAll();
+$("logoutButton").addEventListener("click", () => {
+    currentUser = null;
+    localStorage.removeItem("konoku_current_user");
+    $("loginForm").reset();
+    showAuth("login");
+});
 
-    showToast("Genre berhasil dihapus.");
-}
-
-/* PENGELOLAAN KOLEKSI */
-
-function resetCollectionForm() {
-    $("collectionForm").reset();
-    $("collectionId").value = "";
-    $("collectionModalTitle").textContent = "Tambah Koleksi";
-    $("collectionStatus").value = "Tersedia";
-
-    renderGenreOptions();
-}
-
-function openCollectionForm() {
-    resetCollectionForm();
-
-    if (genres.length === 0) {
-        showToast("Tambahkan genre terlebih dahulu.");
-        resetGenreForm();
-        openModal("genreModal");
-        return;
-    }
-
-    openModal("collectionModal");
-}
-
-$("addCollectionBtn").addEventListener("click", openCollectionForm);
-$("emptyAddBtn").addEventListener("click", openCollectionForm);
-
-function editCollection(id) {
-    const item = collections.find(collection => collection.id === id);
-
-    if (!item) return;
-
-    $("collectionId").value = item.id;
-    $("collectionTitle").value = item.title;
-    $("collectionType").value = item.type;
-    $("collectionGenre").value = item.genreId;
-    $("collectionAuthor").value = item.author;
-    $("collectionYear").value = item.year || "";
-    $("collectionVolume").value = item.volume || "";
-    $("collectionStatus").value = item.status;
-    $("collectionNotes").value = item.notes || "";
-
-    $("collectionModalTitle").textContent = "Ubah Koleksi";
-
-    openModal("collectionModal");
-}
-
-function deleteCollection(id) {
-    const item = collections.find(collection => collection.id === id);
-
-    if (!item) return;
-
-    if (!confirm(`Hapus koleksi "${item.title}"?`)) return;
-
-    collections = collections.filter(collection => collection.id !== id);
-
-    saveData();
-    renderAll();
-
-    showToast("Koleksi berhasil dihapus.");
-}
+// =============================================
+// MAHASISWA 1: CRUD DATA KOLEKSI DAN FILTER
+// =============================================
 
 $("collectionForm").addEventListener("submit", event => {
     event.preventDefault();
 
-    const id = $("collectionId").value;
-    const title = $("collectionTitle").value.trim();
-    const type = $("collectionType").value;
-    const genreId = $("collectionGenre").value;
-    const author = $("collectionAuthor").value.trim();
-    const yearInput = $("collectionYear").value.trim();
-    const year = yearInput ? Number(yearInput) : "";
-    const volume = $("collectionVolume").value.trim();
-    const status = $("collectionStatus").value;
-    const notes = $("collectionNotes").value.trim();
-
-    if (!title || !author) {
-        showToast("Judul dan penulis wajib diisi.");
-        return;
-    }
-
-    if (!genres.some(genre => genre.id === genreId)) {
-        showToast("Pilih genre yang valid terlebih dahulu.");
-        return;
-    }
-
-    if (year && (year < 1000 || year > 2100)) {
-        showToast("Tahun harus di antara 1000 sampai 2100.");
-        return;
-    }
-
-    const data = {
-        title,
-        type,
-        genreId,
-        author,
-        year,
-        volume,
-        status,
-        notes,
-        updatedAt: Date.now()
-    };
-
-    if (id) {
-        const existing = collections.find(item => item.id === id);
-
-        if (existing) {
-            Object.assign(existing, data);
-        }
-
-        showToast("Koleksi berhasil diperbarui.");
-    } else {
-        collections.push({
-            id: createId(),
-            ...data,
-            createdAt: Date.now()
-        });
-
-        showToast("Koleksi berhasil ditambahkan.");
-    }
-
-    saveData();
-    renderAll();
-    closeModal("collectionModal");
-    resetCollectionForm();
-});
-
-/* PENCARIAN DAN FILTER */
-
-function getFilteredCollections() {
-    const term = (
-        $("globalSearch").value + " " +
-        $("collectionSearch").value
-    ).trim().toLocaleLowerCase("id");
-
-    const genreId = $("genreFilter").value;
-    const type = $("typeFilter").value;
-    const status = $("statusFilter").value;
-
-    return collections.filter(item => {
-        const searchable = [
-            item.title,
-            item.author,
-            item.type,
-            getGenreName(item.genreId),
-            item.volume,
-            item.notes
-        ].join(" ").toLocaleLowerCase("id");
-
-        return (
-            (!term || searchable.includes(term)) &&
-            (!genreId || item.genreId === genreId) &&
-            (!type || item.type === type) &&
-            (!status || item.status === status)
-        );
+    collections.push({
+        id: Date.now(),
+        ownerId: currentUser.id,
+        title: $("bookTitle").value.trim(),
+        author: $("bookAuthor").value.trim(),
+        genre: $("bookGenre").value.trim(),
+        type: $("bookType").value,
+        year: $("bookYear").value,
+        condition: $("bookCondition").value,
+        stock: Number($("bookStock").value)
     });
-}
+
+    saveData("konoku_collections", collections);
+    $("collectionForm").reset();
+    $("bookStock").value = 1;
+
+    renderAll();
+    showMessage("appMessage", "Koleksi berhasil ditambahkan.");
+});
 
 function renderCollections() {
-    const tbody = $("collectionTableBody");
-    const data = getFilteredCollections();
+    const keyword = $("globalSearch").value.trim().toLowerCase();
+    const genre = $("genreFilter").value.trim().toLowerCase();
+    const type = $("typeFilter").value;
 
-    $("emptyState").hidden = data.length > 0;
+    const data = collections.filter(book =>
+        book.ownerId === currentUser.id &&
+        (!keyword ||
+            `${book.title} ${book.author} ${book.genre}`
+                .toLowerCase().includes(keyword)) &&
+        (!genre || book.genre.toLowerCase().includes(genre)) &&
+        (!type || book.type === type)
+    );
 
-    tbody.innerHTML = data.map((item, index) => {
-        const initials = item.title
-            .trim()
-            .split(/\s+/)
-            .slice(0, 2)
-            .map(word => word[0])
-            .join("")
-            .toUpperCase();
-
-        return `
+    $("collectionTable").innerHTML = data.length
+        ? data.map(book => `
             <tr>
+                <td>${escapeHTML(book.title)}</td>
+                <td>${escapeHTML(book.author)}</td>
+                <td>${escapeHTML(book.genre)}</td>
+                <td>${escapeHTML(book.type)}</td>
+                <td>${book.stock}</td>
+                <td>${escapeHTML(book.condition)}</td>
                 <td>
-                    <div class="book-cell">
-                        <span class="book-cover"
-                            style="background:${colors[index % colors.length]}">
-                            ${escapeHTML(initials)}
-                        </span>
-
-                        <span>
-                            <strong class="book-title">
-                                ${escapeHTML(item.title)}
-                            </strong>
-                            <small class="book-subtitle">
-                                ${escapeHTML(item.volume || "Tanpa volume")}
-                            </small>
-                        </span>
-                    </div>
-                </td>
-
-                <td><span class="type-pill">
-                    ${escapeHTML(item.type)}
-                </span></td>
-
-                <td>${escapeHTML(getGenreName(item.genreId))}</td>
-                <td>${escapeHTML(item.author)}</td>
-                <td>${escapeHTML(item.year || "—")}</td>
-
-                <td>
-                    <span class="status-pill ${
-                        item.status === "Tersedia"
-                            ? "status-tersedia"
-                            : "status-dipinjam"
-                    }">
-                        ${escapeHTML(item.status)}
-                    </span>
-                </td>
-
-                <td>
-                    <div class="row-actions">
-                        <button class="mini-btn"
-                            data-edit-collection="${escapeHTML(item.id)}"
-                            title="Ubah">✎</button>
-
-                        <button class="mini-btn delete"
-                            data-delete-collection="${escapeHTML(item.id)}"
-                            title="Hapus">×</button>
-                    </div>
+                    <button class="small-btn delete-btn"
+                        data-delete-book="${book.id}">
+                        Hapus
+                    </button>
                 </td>
             </tr>
-        `;
-    }).join("");
-
-    $("tableCount").textContent =
-        `Menampilkan ${data.length} dari ${collections.length} koleksi`;
-
-    tbody.querySelectorAll("[data-edit-collection]").forEach(button => {
-        button.addEventListener("click", () => {
-            editCollection(button.dataset.editCollection);
-        });
-    });
-
-    tbody.querySelectorAll("[data-delete-collection]").forEach(button => {
-        button.addEventListener("click", () => {
-            deleteCollection(button.dataset.deleteCollection);
-        });
-    });
+        `).join("")
+        : `<tr><td colspan="7" class="empty">
+            Belum ada koleksi. Silakan tambahkan data.
+           </td></tr>`;
 }
 
-[
-    "globalSearch",
-    "collectionSearch",
-    "genreFilter",
-    "typeFilter",
-    "statusFilter"
-].forEach(id => {
-    $(id).addEventListener("input", renderCollections);
-    $(id).addEventListener("change", renderCollections);
-});
+$("collectionTable").addEventListener("click", event => {
+    const button = event.target.closest("[data-delete-book]");
+    if (!button) return;
 
-/* STATISTIK DASHBOARD */
+    const id = Number(button.dataset.deleteBook);
 
-function renderStats() {
-    $("totalCollections").textContent = collections.length;
-    $("totalGenres").textContent = genres.length;
-
-    $("availableCollections").textContent =
-        collections.filter(item => item.status === "Tersedia").length;
-
-    const sorted = genres.map(genre => ({
-        name: genre.name,
-        count: countByGenre(genre.id)
-    })).sort((a, b) => b.count - a.count);
-
-    if (sorted.length > 0 && sorted[0].count > 0) {
-        $("popularGenre").textContent = sorted[0].name;
-        $("popularGenreFoot").textContent =
-            `${sorted[0].count} koleksi dalam genre ini`;
-    } else {
-        $("popularGenre").textContent = "—";
-        $("popularGenreFoot").textContent = "Belum ada data koleksi";
-    }
-}
-
-/* REKAP PER GENRE */
-
-function renderRecap() {
-    const container = $("genreRecap");
-
-    if (genres.length === 0) {
-        container.innerHTML = `
-            <div class="empty-message">
-                Belum ada genre untuk direkap.
-            </div>
-        `;
+    if (loans.some(loan =>
+        loan.ownerId === currentUser.id &&
+        loan.bookId === id && !loan.returned
+    )) {
+        alert("Koleksi masih dipinjam. Catat pengembaliannya dahulu.");
         return;
     }
 
-    const values = genres.map((genre, index) => ({
-        name: genre.name,
-        count: countByGenre(genre.id),
-        color: colors[index % colors.length]
-    }));
+    if (!confirm("Hapus koleksi ini?")) return;
 
-    const max = Math.max(1, ...values.map(item => item.count));
+    collections = collections.filter(book => book.id !== id);
+    saveData("konoku_collections", collections);
+    renderAll();
+});
 
-    container.innerHTML = values.map(item => {
-        const width = item.count === 0
-            ? 0
-            : Math.max(4, item.count / max * 100);
+$("globalSearch").addEventListener("input", renderCollections);
+$("genreFilter").addEventListener("input", renderCollections);
+$("typeFilter").addEventListener("change", renderCollections);
+
+// =============================================
+// MAHASISWA 2: DATA TEMAN / PEMINJAM
+// =============================================
+
+$("friendForm").addEventListener("submit", event => {
+    event.preventDefault();
+
+    friends.push({
+        id: Date.now(),
+        ownerId: currentUser.id,
+        name: $("friendName").value.trim(),
+        phone: $("friendPhone").value.trim()
+    });
+
+    saveData("konoku_friends", friends);
+    $("friendForm").reset();
+
+    renderAll();
+    showMessage("appMessage", "Data teman berhasil ditambahkan.");
+});
+
+function renderFriends() {
+    const data = friends.filter(
+        friend => friend.ownerId === currentUser.id
+    );
+
+    $("friendTable").innerHTML = data.length
+        ? data.map(friend => `
+            <tr>
+                <td>${escapeHTML(friend.name)}</td>
+                <td>${escapeHTML(friend.phone || "-")}</td>
+                <td>
+                    <button class="small-btn delete-btn"
+                        data-delete-friend="${friend.id}">
+                        Hapus
+                    </button>
+                </td>
+            </tr>
+        `).join("")
+        : `<tr><td colspan="3" class="empty">
+            Belum ada teman terdaftar.
+           </td></tr>`;
+}
+
+$("friendTable").addEventListener("click", event => {
+    const button = event.target.closest("[data-delete-friend]");
+    if (!button) return;
+
+    const id = Number(button.dataset.deleteFriend);
+
+    if (loans.some(loan =>
+        loan.ownerId === currentUser.id &&
+        loan.friendId === id && !loan.returned
+    )) {
+        alert("Teman masih memiliki pinjaman aktif.");
+        return;
+    }
+
+    if (!confirm("Hapus data teman ini?")) return;
+
+    friends = friends.filter(friend => friend.id !== id);
+    saveData("konoku_friends", friends);
+    renderAll();
+});
+
+// =============================================
+// MAHASISWA 2: TRANSAKSI PEMINJAMAN
+// =============================================
+
+function renderLoanOptions() {
+    const availableFriends = friends.filter(
+        friend => friend.ownerId === currentUser.id
+    );
+
+    const availableBooks = collections.filter(
+        book => book.ownerId === currentUser.id
+    );
+
+    $("loanFriend").innerHTML = availableFriends.map(friend => `
+        <option value="${friend.id}">
+            ${escapeHTML(friend.name)}
+        </option>
+    `).join("");
+
+    $("loanBook").innerHTML = availableBooks.map(book => {
+        const activeCount = loans.filter(loan =>
+            loan.ownerId === currentUser.id &&
+            loan.bookId === book.id &&
+            !loan.returned
+        ).length;
+
+        const available = book.stock - activeCount;
 
         return `
-            <div class="recap-row">
-                <span class="recap-label">
-                    ${escapeHTML(item.name)}
-                </span>
-
-                <div class="recap-track">
-                    <div class="recap-bar"
-                        style="width:${width}%;background:${item.color}">
-                    </div>
-                </div>
-
-                <span class="recap-count">${item.count}</span>
-            </div>
+            <option value="${book.id}" ${available <= 0 ? "disabled" : ""}>
+                ${escapeHTML(book.title)} (tersedia: ${available})
+            </option>
         `;
     }).join("");
+
+    if (!availableFriends.length) {
+        $("loanFriend").innerHTML =
+            '<option value="">Tambahkan teman terlebih dahulu</option>';
+    }
+
+    if (!availableBooks.length) {
+        $("loanBook").innerHTML =
+            '<option value="">Tambahkan koleksi terlebih dahulu</option>';
+    }
 }
 
-/* PROFIL PENGGUNA */
+$("loanDate").value = today();
 
-function renderProfile() {
-    $("profileName").textContent = profileName;
+$("loanForm").addEventListener("submit", event => {
+    event.preventDefault();
 
-    $("avatarInitial").textContent =
-        (profileName.trim()[0] || "A").toLocaleUpperCase("id");
+    const friendId = Number($("loanFriend").value);
+    const bookId = Number($("loanBook").value);
+    const loanDate = $("loanDate").value;
+    const dueDate = $("loanDue").value;
+
+    const friend = friends.find(item =>
+        item.id === friendId && item.ownerId === currentUser.id
+    );
+
+    const book = collections.find(item =>
+        item.id === bookId && item.ownerId === currentUser.id
+    );
+
+    if (!friend || !book) {
+        alert("Pilih teman dan koleksi yang valid.");
+        return;
+    }
+
+    if (dueDate < loanDate) {
+        alert("Tanggal pengembalian tidak boleh sebelum tanggal pinjam.");
+        return;
+    }
+
+    const activeCount = loans.filter(loan =>
+        loan.ownerId === currentUser.id &&
+        loan.bookId === bookId &&
+        !loan.returned
+    ).length;
+
+    if (activeCount >= book.stock) {
+        alert("Stok koleksi tidak tersedia.");
+        return;
+    }
+
+    loans.push({
+        id: Date.now(),
+        ownerId: currentUser.id,
+        friendId,
+        bookId,
+        loanDate,
+        dueDate,
+        returned: false
+    });
+
+    saveData("konoku_loans", loans);
+    renderAll();
+    renderLoanOptions();
+    showMessage("appMessage", "Transaksi peminjaman berhasil dicatat.");
+});
+
+function renderLoans() {
+    const data = loans.filter(
+        loan => loan.ownerId === currentUser.id
+    );
+
+    $("loanTable").innerHTML = data.length
+        ? data.map(loan => {
+            const friend = friends.find(item =>
+                item.id === loan.friendId
+            );
+            const book = collections.find(item =>
+                item.id === loan.bookId
+            );
+            const status = getLoanStatus(loan);
+
+            return `
+                <tr>
+                    <td>${escapeHTML(friend?.name || "Data tidak ditemukan")}</td>
+                    <td>${escapeHTML(book?.title || "Koleksi dihapus")}</td>
+                    <td>${escapeHTML(loan.loanDate)}</td>
+                    <td>${escapeHTML(loan.dueDate)}</td>
+                    <td><span class="status ${
+                        status === "Terlambat" ? "late" :
+                        status === "Kembali" ? "returned" : ""
+                    }">${status}</span></td>
+                    <td>
+                        ${!loan.returned ? `
+                            <button class="small-btn"
+                                data-return-loan="${loan.id}">
+                                Kembalikan
+                            </button>` : "-"}
+                    </td>
+                </tr>
+            `;
+        }).join("")
+        : `<tr><td colspan="6" class="empty">
+            Belum ada transaksi peminjaman.
+           </td></tr>`;
 }
+
+$("loanTable").addEventListener("click", event => {
+    const button = event.target.closest("[data-return-loan]");
+    if (!button) return;
+
+    const id = Number(button.dataset.returnLoan);
+    const loan = loans.find(item =>
+        item.id === id && item.ownerId === currentUser.id
+    );
+
+    if (!loan || loan.returned) return;
+
+    loan.returned = true;
+    saveData("konoku_loans", loans);
+    renderAll();
+    renderLoanOptions();
+});
+
+// =============================================
+// DASHBOARD: ANGKA DIHITUNG DARI DATA ASLI
+// =============================================
+
+function renderDashboard() {
+    const myBooks = collections.filter(
+        book => book.ownerId === currentUser.id
+    );
+
+    const myFriends = friends.filter(
+        friend => friend.ownerId === currentUser.id
+    );
+
+    const myLoans = loans.filter(
+        loan => loan.ownerId === currentUser.id
+    );
+
+    const active = myLoans.filter(loan => !loan.returned);
+    const late = active.filter(loan => getLoanStatus(loan) === "Terlambat");
+
+    $("totalKoleksi").textContent =
+        myBooks.reduce((sum, book) => sum + book.stock, 0) + " item";
+
+    $("totalDipinjam").textContent = active.length + " item";
+    $("totalTerlambat").textContent = late.length + " transaksi";
+    $("totalTeman").textContent = myFriends.length + " orang";
+
+    const recent = [...myLoans].sort(
+        (a, b) => b.id - a.id
+    ).slice(0, 5);
+
+    $("recentLoans").innerHTML = recent.length
+        ? recent.map(loan => {
+            const friend = friends.find(item => item.id === loan.friendId);
+            const book = collections.find(item => item.id === loan.bookId);
+            const status = getLoanStatus(loan);
+
+            return `
+                <tr>
+                    <td>${escapeHTML(friend?.name || "-")}</td>
+                    <td>${escapeHTML(book?.title || "Koleksi dihapus")}</td>
+                    <td>${escapeHTML(loan.loanDate)}</td>
+                    <td>${escapeHTML(status)}</td>
+                </tr>
+            `;
+        }).join("")
+        : `<tr><td colspan="4" class="empty">
+            Belum ada transaksi peminjaman.
+           </td></tr>`;
+
+    const attention = [];
+
+    if (late.length) {
+        attention.push(`<p>• ${late.length} transaksi melewati tanggal kembali.</p>`);
+    }
+
+    if (!myBooks.length) {
+        attention.push("<p>• Tambahkan koleksi pertama melalui menu Data Koleksi.</p>");
+    }
+
+    if (!myFriends.length) {
+        attention.push("<p>• Tambahkan teman melalui menu Teman/Peminjam.</p>");
+    }
+
+    if (!attention.length) {
+        attention.push("<p>• Tidak ada hal yang perlu diperhatikan saat ini.</p>");
+    }
+
+    $("attentionList").innerHTML = attention.join("");
+}
+
+// =============================================
+// PROFIL PENGGUNA
+// =============================================
 
 $("profileButton").addEventListener("click", () => {
-    $("profileNameInput").value = profileName;
-    openModal("profileModal");
+    showPage("profil");
 });
 
 $("profileForm").addEventListener("submit", event => {
     event.preventDefault();
 
-    const name = $("profileNameInput").value.trim();
+    const name = $("editName").value.trim();
+    if (!name) return;
 
-    if (!name) {
-        showToast("Nama pengguna wajib diisi.");
-        return;
+    const user = users.find(item => item.id === currentUser.id);
+
+    if (user) {
+        user.name = name;
+        saveData("konoku_users", users);
     }
 
-    profileName = name;
+    currentUser.name = name;
+    saveData("konoku_current_user", currentUser);
 
-    localStorage.setItem(STORAGE.profile, profileName);
-
-    renderProfile();
-    closeModal("profileModal");
-
-    showToast("Profil berhasil diperbarui.");
+    updateProfile();
+    showMessage("appMessage", "Profil berhasil diperbarui.");
 });
 
-/* NAVIGASI */
+// =============================================
+// LAPORAN CSV
+// =============================================
 
-document.querySelectorAll(".nav-link").forEach(link => {
-    link.addEventListener("click", event => {
-        const target = link.getAttribute("href");
+$("exportButton").addEventListener("click", () => {
+    const myLoans = loans.filter(
+        loan => loan.ownerId === currentUser.id
+    );
 
-        if (target !== "#dashboard" &&
-            target !== "#koleksi" &&
-            target !== "#genre") {
-            event.preventDefault();
-            showToast(
-                "Bagian ini berada di luar modul Mahasiswa 1."
-            );
-            return;
-        }
+    const rows = [
+        ["Peminjam", "Judul", "Tanggal Pinjam", "Batas Kembali", "Status"]
+    ];
 
-        document.querySelectorAll(".nav-link").forEach(item => {
-            item.classList.remove("active");
-        });
+    myLoans.forEach(loan => {
+        const friend = friends.find(item => item.id === loan.friendId);
+        const book = collections.find(item => item.id === loan.bookId);
 
-        link.classList.add("active");
+        rows.push([
+            friend?.name || "-",
+            book?.title || "-",
+            loan.loanDate,
+            loan.dueDate,
+            getLoanStatus(loan)
+        ]);
     });
+
+    const csv = rows.map(row =>
+        row.map(value =>
+            '"' + String(value).replace(/"/g, '""') + '"'
+        ).join(",")
+    ).join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + csv], {
+        type: "text/csv;charset=utf-8;"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "laporan-konoku.csv";
+    link.click();
+    URL.revokeObjectURL(url);
 });
 
-/* JALANKAN APLIKASI */
+// =============================================
+// RENDER SEMUA KOMPONEN
+// =============================================
 
 function renderAll() {
-    renderGenreOptions();
-    renderGenres();
+    if (!currentUser) return;
+
     renderCollections();
-    renderStats();
-    renderRecap();
-    renderProfile();
+    renderFriends();
+    renderLoanOptions();
+    renderLoans();
+    renderDashboard();
+
+    const myBooks = collections.filter(
+        book => book.ownerId === currentUser.id
+    );
+    const myFriends = friends.filter(
+        friend => friend.ownerId === currentUser.id
+    );
+    const myLoans = loans.filter(
+        loan => loan.ownerId === currentUser.id
+    );
+
+    $("reportBooks").textContent = myBooks.length;
+    $("reportFriends").textContent = myFriends.length;
+    $("reportLoans").textContent = myLoans.length;
 }
 
-saveData();
-renderAll();
+// =============================================
+// MULAI APLIKASI
+// =============================================
+
+if (currentUser &&
+    users.some(user => user.id === currentUser.id)) {
+    showApp();
+} else {
+    currentUser = null;
+    localStorage.removeItem("konoku_current_user");
+    showAuth("login");
+}
