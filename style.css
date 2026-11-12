@@ -1,0 +1,205 @@
+:root {
+    --primary: #1d2939;
+    --primary-hover: #344054;
+    --background: #f5f7fa;
+    --white: #ffffff;
+    --border: #d0d5dd;
+    --text: #101828;
+    --muted: #667085;
+    --danger: #d92d20;
+    --radius: 12px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--background);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+button, input, select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+h1 {
+    font-size: 25px;
+    margin-bottom: 4px;
+}
+
+h2 {
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+h3 {
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.subtitle {
+    color: var(--muted);
+    margin-bottom: 22px;
+}
+
+.app {
+    max-width: 1600px;
+    min-height: 100vh;
+    margin: auto;
+    background: var(--white);
+    border: 1px solid var(--border);
+}
+
+.content {
+    min-width: 0;
+    padding: 28px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.stat-card, .panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: white;
+}
+
+.stat-card {
+    padding: 18px;
+}
+
+.stat-card span {
+    color: #475467;
+}
+
+.stat-card h2 {
+    margin-top: 6px;
+    font-size: 23px;
+}
+
+.panel {
+    padding: 20px;
+    margin-bottom: 20px;
+    min-width: 0;
+}
+
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 13px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+th {
+    background: #f2f4f7;
+    font-weight: bold;
+}
+
+.empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 24px;
+}
+
+.status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 20px;
+    background: #f2f4f7;
+}
+
+.status.late {
+    color: #b42318;
+    background: #fef3f2;
+}
+
+.status.returned {
+    color: #027a48;
+    background: #ecfdf3;
+}
+
+.small-btn {
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 6px;
+    padding: 6px 9px;
+    margin: 2px;
+}
+
+.delete-btn {
+    color: var(--danger);
+}
+
+.data-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 16px;
+}
+
+.data-form label {
+    grid-column: span 2;
+    display: block;
+    margin: 13px 0 6px;
+    font-weight: 600;
+}
+
+.data-form input, .data-form select {
+    grid-column: span 2;
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    color: var(--text);
+    outline: none;
+}
+
+.primary-btn {
+    border-radius: 8px;
+    padding: 11px 16px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+    margin-top: 16px;
+    justify-self: start;
+}
+
+.primary-btn:hover {
+    background: var(--primary-hover);
+}
+
+.message {
+    margin-top: 14px;
+    color: var(--muted);
+}
+
+.message.error {
+    color: var(--danger);
+}
